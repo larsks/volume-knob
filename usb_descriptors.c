@@ -29,19 +29,49 @@ uint8_t const *tud_descriptor_device_cb(void) {
   return (uint8_t const *)&desc_device;
 }
 
-uint8_t const desc_hid_report[] = {
+uint8_t const desc_hid_report_consumer[] = {
     TUD_HID_REPORT_DESC_CONSUMER(HID_REPORT_ID(REPORT_ID_CONSUMER_CONTROL)),
 };
 
+// clang-format off
+uint8_t const desc_hid_report_config[] = {
+    0x06, 0x00, 0xFF,              // Usage Page (Vendor Defined 0xFF00)
+    0x09, 0x01,                    // Usage (Vendor Usage 1)
+    0xA1, 0x01,                    // Collection (Application)
+
+    // Report ID 1: Config Data (feature report, 3x uint16)
+    0x85, REPORT_ID_CONFIG,        //   Report ID
+    0x09, 0x02,                    //   Usage (Vendor Usage 2)
+    0x15, 0x00,                    //   Logical Minimum (0)
+    0x27, 0xFF, 0xFF, 0x00, 0x00,  //   Logical Maximum (65535)
+    0x75, 0x10,                    //   Report Size (16)
+    0x95, 0x03,                    //   Report Count (3)
+    0xB1, 0x02,                    //   Feature (Data, Variable, Absolute)
+
+    // Report ID 2: Command (feature report, 1x uint8)
+    0x85, REPORT_ID_COMMAND,       //   Report ID
+    0x09, 0x03,                    //   Usage (Vendor Usage 3)
+    0x15, 0x00,                    //   Logical Minimum (0)
+    0x25, 0x03,                    //   Logical Maximum (3)
+    0x75, 0x08,                    //   Report Size (8)
+    0x95, 0x01,                    //   Report Count (1)
+    0xB1, 0x02,                    //   Feature (Data, Variable, Absolute)
+
+    0xC0,                          // End Collection
+};
+// clang-format on
+
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
-  (void)instance;
-  return desc_hid_report;
+  if (instance == HID_INSTANCE_CONFIG)
+    return desc_hid_report_config;
+  return desc_hid_report_consumer;
 }
 
 enum {
   ITF_NUM_CDC,
   ITF_NUM_CDC_DATA,
   ITF_NUM_HID,
+  ITF_NUM_HID_CONFIG,
   ITF_NUM_RPI_RESET,
   ITF_NUM_TOTAL,
 };
@@ -49,13 +79,14 @@ enum {
 #define TUD_RPI_RESET_DESC_LEN 9
 
 #define CONFIG_TOTAL_LEN                                                       \
-  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_HID_DESC_LEN +                 \
+  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + 2 * TUD_HID_DESC_LEN +            \
    TUD_RPI_RESET_DESC_LEN)
 
 #define EPNUM_CDC_NOTIF 0x81
 #define EPNUM_CDC_OUT 0x02
 #define EPNUM_CDC_IN 0x82
 #define EPNUM_HID 0x83
+#define EPNUM_HID_CONFIG 0x84
 
 #define TUD_RPI_RESET_DESCRIPTOR(_itfnum, _stridx)                             \
   9, TUSB_DESC_INTERFACE, _itfnum, 0, 0, TUSB_CLASS_VENDOR_SPECIFIC,           \
@@ -69,7 +100,11 @@ uint8_t const desc_configuration[] = {
                        EPNUM_CDC_IN, 64),
 
     TUD_HID_DESCRIPTOR(ITF_NUM_HID, 0, HID_ITF_PROTOCOL_NONE,
-                       sizeof(desc_hid_report), EPNUM_HID,
+                       sizeof(desc_hid_report_consumer), EPNUM_HID,
+                       CFG_TUD_HID_EP_BUFSIZE, 5),
+
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_CONFIG, 6, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_config), EPNUM_HID_CONFIG,
                        CFG_TUD_HID_EP_BUFSIZE, 5),
 
     TUD_RPI_RESET_DESCRIPTOR(ITF_NUM_RPI_RESET, 5),
@@ -89,6 +124,7 @@ char const *string_desc_arr[] = {
     [3] = serial_str,
     [4] = "Board CDC",
     [5] = "Reset",
+    [6] = "Config",
 };
 
 static uint16_t _desc_str[32 + 1];

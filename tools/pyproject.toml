@@ -1,0 +1,9 @@
+[project]
+name = "vkcfg"
+version = "0.1.0"
+description = "Configuration tool for the Volume Knob"
+requires-python = ">=3.9"
+dependencies = ["hidapi"]
+
+[project.scripts]
+vkcfg = "vkcfg:main"

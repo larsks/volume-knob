@@ -13,6 +13,7 @@ pico_sdk_init()
 
 add_executable(volume_knob
     main.c
+    persist.c
     usb_descriptors.c
 )
 
@@ -33,6 +34,8 @@ pico_enable_stdio_usb(volume_knob 1)
 target_link_libraries(volume_knob
     pico_stdlib
     hardware_gpio
+    hardware_flash
+    hardware_sync
     tinyusb_device
     tinyusb_board
 )

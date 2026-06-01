@@ -3,7 +3,10 @@
 #include "pico/stdio.h"
 #include "tusb.h"
 
+#include <string.h>
+
 #include "config.h"
+#include "persist.h"
 #include "usb_hid.h"
 
 // Quadrature state transition table.
@@ -18,6 +21,7 @@ static const int8_t encoder_table[16] = {
 };
 // clang-format on
 
+static config_t config;
 static uint8_t encoder_prev_state;
 static int32_t encoder_accum;
 static bool key_is_pressed;
@@ -68,11 +72,11 @@ static void encoder_task(void) {
 
   encoder_accum += delta;
 
-  if (encoder_accum >= ENCODER_DIVIDER) {
-    if (send_consumer_key(KEY_CW))
+  if (encoder_accum >= config.divider) {
+    if (send_consumer_key(config.key_cw))
       encoder_accum = 0;
-  } else if (encoder_accum <= -ENCODER_DIVIDER) {
-    if (send_consumer_key(KEY_CCW))
+  } else if (encoder_accum <= -config.divider) {
+    if (send_consumer_key(config.key_ccw))
       encoder_accum = 0;
   }
 }
@@ -86,6 +90,7 @@ int main(void) {
   board_init();
   tusb_init();
   stdio_init_all();
+  config_load(&config);
   encoder_init();
 
   while (1) {
@@ -106,22 +111,34 @@ void tud_resume_cb(void) {}
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id,
                                hid_report_type_t report_type, uint8_t *buffer,
                                uint16_t reqlen) {
-  // Suppress "unused parameter" compiler warnings.
-  (void)instance;
-  (void)report_id;
   (void)report_type;
-  (void)buffer;
   (void)reqlen;
+
+  if (instance == HID_INSTANCE_CONFIG && report_id == REPORT_ID_CONFIG) {
+    memcpy(buffer, &config.key_cw, CONFIG_REPORT_SIZE);
+    return CONFIG_REPORT_SIZE;
+  }
+
   return 0;
 }
 
 void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize) {
-  // Suppress "unused parameter" compiler warnings.
-  (void)instance;
-  (void)report_id;
   (void)report_type;
-  (void)buffer;
-  (void)bufsize;
+
+  if (instance != HID_INSTANCE_CONFIG)
+    return;
+
+  if (report_id == REPORT_ID_CONFIG && bufsize >= CONFIG_REPORT_SIZE) {
+    memcpy(&config.key_cw, buffer, CONFIG_REPORT_SIZE);
+  } else if (report_id == REPORT_ID_COMMAND && bufsize >= COMMAND_REPORT_SIZE) {
+    uint8_t cmd = buffer[0];
+    if (cmd == CONFIG_CMD_SAVE)
+      config_save(&config);
+    else if (cmd == CONFIG_CMD_LOAD)
+      config_load(&config);
+    else if (cmd == CONFIG_CMD_DEFAULTS)
+      config_set_defaults(&config);
+  }
 }
