@@ -39,11 +39,12 @@ static void encoder_init(void) {
     key_is_pressed = false;
 }
 
-static void send_consumer_key(uint16_t usage) {
+static bool send_consumer_key(uint16_t usage) {
     if (!tud_hid_ready())
-        return;
+        return false;
     tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &usage, sizeof(usage));
     key_is_pressed = (usage != 0);
+    return true;
 }
 
 static void encoder_task(void) {
@@ -59,11 +60,11 @@ static void encoder_task(void) {
 
     int32_t threshold = ENCODER_DIVIDER * ENCODER_STEPS_PER_DETENT;
     if (encoder_accum >= threshold) {
-        send_consumer_key(KEY_CW);
-        encoder_accum = 0;
+        if (send_consumer_key(KEY_CW))
+            encoder_accum = 0;
     } else if (encoder_accum <= -threshold) {
-        send_consumer_key(KEY_CCW);
-        encoder_accum = 0;
+        if (send_consumer_key(KEY_CCW))
+            encoder_accum = 0;
     }
 }
 
