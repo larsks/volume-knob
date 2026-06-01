@@ -5,8 +5,6 @@
 
 #include "config.h"
 
-#define REPORT_ID_CONSUMER_CONTROL 1
-
 // Quadrature state transition table.
 // Index: (prev_AB << 2) | curr_AB
 // Values: 0 = invalid/no change, 1 = CW, -1 = CCW

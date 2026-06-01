@@ -3,13 +3,11 @@
 #include "pico/unique_id.h"
 #include "tusb.h"
 
+#include "config.h"
+
 #define USB_VID 0x1209
 #define USB_PID 0x2641
 #define USB_BCD 0x0200
-
-enum {
-  REPORT_ID_CONSUMER_CONTROL = 1,
-};
 
 tusb_desc_device_t const desc_device = {
     .bLength = sizeof(tusb_desc_device_t),
