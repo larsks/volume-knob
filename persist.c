@@ -4,7 +4,6 @@
 
 #include "hardware/flash.h"
 #include "hardware/sync.h"
-#include "pico/stdlib.h"
 
 #include <string.h>
 
@@ -35,6 +34,7 @@ void config_set_defaults(config_t *cfg) {
   cfg->crc32 = 0;
 }
 
+// Load runtime configuration from flash.
 void config_load(config_t *cfg) {
   if (flash_config->magic != CONFIG_MAGIC) {
     config_set_defaults(cfg);
@@ -48,6 +48,12 @@ void config_load(config_t *cfg) {
   memcpy(cfg, flash_config, sizeof(config_t));
 }
 
+// __no_inline_not_in_flash_func() is a macro used in the Raspberry Pi Pico SDK
+// to instruct the compiler to execute a specific function entirely from RAM
+// instead of Flash memory.
+//
+// This guarantees the CPU can keep fetching instructions while flash is being
+// erased and programmed.
 static void __no_inline_not_in_flash_func(do_flash_write)(const config_t *cfg) {
   uint32_t ints = save_and_disable_interrupts();
   flash_range_erase(CONFIG_FLASH_OFFSET, FLASH_SECTOR_SIZE);
@@ -56,6 +62,7 @@ static void __no_inline_not_in_flash_func(do_flash_write)(const config_t *cfg) {
   restore_interrupts(ints);
 }
 
+// Save runtime configuration to flash.
 void config_save(const config_t *cfg) {
   config_t tmp = *cfg;
   tmp.magic = CONFIG_MAGIC;
