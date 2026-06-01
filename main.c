@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include "bsp/board_api.h"
 #include "hardware/gpio.h"
 #include "pico/stdio.h"

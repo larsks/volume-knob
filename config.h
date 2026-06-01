@@ -1,8 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "tusb.h"
-
 #define ENCODER_PIN_A 28
 #define ENCODER_PIN_B 29
 
