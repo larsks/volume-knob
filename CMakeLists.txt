@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(PICO_SDK_PATH "$ENV{HOME}/src/pico-sdk")
 set(PICO_BOARD waveshare_rp2040_zero)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
