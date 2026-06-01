@@ -1,7 +1,6 @@
-#include "bsp/board_api.h"
-#include "pico/stdio_usb/reset_interface.h"
+#include "pico/stdio_usb/reset_interface.h" // IWYU pragma: keep
 #include "pico/unique_id.h"
-#include "tusb.h"
+#include "tusb.h" // IWYU pragma: keep
 
 #include "config.h"
 
