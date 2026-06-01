@@ -17,6 +17,18 @@ add_executable(volume_knob
 
 target_include_directories(volume_knob PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+target_compile_definitions(volume_knob PRIVATE
+    PICO_STDIO_USB_ENABLE_RESET_VIA_VENDOR_INTERFACE=1
+    PICO_STDIO_USB_ENABLE_RESET_VIA_BAUD_RATE=1
+    PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_BOOTSEL=1
+    PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_FLASH_BOOT=1
+    PICO_STDIO_USB_RESET_BOOTSEL_INTERFACE_DISABLE_MASK=0
+    PICO_STDIO_USB_RESET_RESET_TO_FLASH_DELAY_MS=100
+    PICO_STDIO_USB_RESET_MAGIC_BAUD_RATE=1200
+)
+
+pico_enable_stdio_usb(volume_knob 1)
+
 target_link_libraries(volume_knob
     pico_stdlib
     hardware_gpio

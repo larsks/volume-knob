@@ -2,6 +2,7 @@
 
 #include "bsp/board_api.h"
 #include "hardware/gpio.h"
+#include "pico/stdio.h"
 #include "tusb.h"
 
 #include "config.h"
@@ -78,9 +79,8 @@ static void release_task(void) {
 
 int main(void) {
     board_init();
-
     tusb_init();
-
+    stdio_init_all();
     encoder_init();
 
     while (1) {
