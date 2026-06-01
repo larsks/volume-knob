@@ -268,7 +268,7 @@ func openDevice() (*hid.Device, error) {
 		})
 	}
 	if path == "" {
-		return nil, fmt.Errorf("volume Knob not found")
+		return nil, fmt.Errorf("volume knob not found")
 	}
 
 	dev, err := hid.OpenPath(path)
