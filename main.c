@@ -60,10 +60,11 @@ static void encoder_task(void) {
 
     encoder_accum += delta;
 
-    if (encoder_accum >= ENCODER_DIVIDER) {
+    int32_t threshold = ENCODER_DIVIDER * ENCODER_STEPS_PER_DETENT;
+    if (encoder_accum >= threshold) {
         send_consumer_key(KEY_CW);
         encoder_accum = 0;
-    } else if (encoder_accum <= -ENCODER_DIVIDER) {
+    } else if (encoder_accum <= -threshold) {
         send_consumer_key(KEY_CCW);
         encoder_accum = 0;
     }

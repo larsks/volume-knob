@@ -9,9 +9,10 @@
 #define KEY_CW HID_USAGE_CONSUMER_VOLUME_INCREMENT
 #define KEY_CCW HID_USAGE_CONSUMER_VOLUME_DECREMENT
 
-// Number of encoder state transitions per key event.
-// Most encoders produce 4 transitions per detent; set to 4 for one key per
-// click.
-#define ENCODER_DIVIDER 4
+// State transitions per detent click (4 for most quadrature encoders)
+#define ENCODER_STEPS_PER_DETENT 4
+
+// Number of detent clicks per key event
+#define ENCODER_DIVIDER 64
 
 #endif
