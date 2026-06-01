@@ -1,35 +1,35 @@
 #include "bsp/board_api.h"
-#include "pico/unique_id.h"
 #include "pico/stdio_usb/reset_interface.h"
+#include "pico/unique_id.h"
 #include "tusb.h"
 
-#define USB_VID 0xCafe
-#define USB_PID 0x4001
+#define USB_VID 0x1209
+#define USB_PID 0x2641
 #define USB_BCD 0x0200
 
 enum {
-    REPORT_ID_CONSUMER_CONTROL = 1,
+  REPORT_ID_CONSUMER_CONTROL = 1,
 };
 
 tusb_desc_device_t const desc_device = {
-    .bLength            = sizeof(tusb_desc_device_t),
-    .bDescriptorType    = TUSB_DESC_DEVICE,
-    .bcdUSB             = USB_BCD,
-    .bDeviceClass       = TUSB_CLASS_MISC,
-    .bDeviceSubClass    = MISC_SUBCLASS_COMMON,
-    .bDeviceProtocol    = MISC_PROTOCOL_IAD,
-    .bMaxPacketSize0    = CFG_TUD_ENDPOINT0_SIZE,
-    .idVendor           = USB_VID,
-    .idProduct          = USB_PID,
-    .bcdDevice          = 0x0100,
-    .iManufacturer      = 0x01,
-    .iProduct           = 0x02,
-    .iSerialNumber      = 0x03,
+    .bLength = sizeof(tusb_desc_device_t),
+    .bDescriptorType = TUSB_DESC_DEVICE,
+    .bcdUSB = USB_BCD,
+    .bDeviceClass = TUSB_CLASS_MISC,
+    .bDeviceSubClass = MISC_SUBCLASS_COMMON,
+    .bDeviceProtocol = MISC_PROTOCOL_IAD,
+    .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
+    .idVendor = USB_VID,
+    .idProduct = USB_PID,
+    .bcdDevice = 0x0100,
+    .iManufacturer = 0x01,
+    .iProduct = 0x02,
+    .iSerialNumber = 0x03,
     .bNumConfigurations = 0x01,
 };
 
 uint8_t const *tud_descriptor_device_cb(void) {
-    return (uint8_t const *)&desc_device;
+  return (uint8_t const *)&desc_device;
 }
 
 uint8_t const desc_hid_report[] = {
@@ -37,32 +37,32 @@ uint8_t const desc_hid_report[] = {
 };
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
-    (void)instance;
-    return desc_hid_report;
+  (void)instance;
+  return desc_hid_report;
 }
 
 enum {
-    ITF_NUM_CDC,
-    ITF_NUM_CDC_DATA,
-    ITF_NUM_HID,
-    ITF_NUM_RPI_RESET,
-    ITF_NUM_TOTAL,
+  ITF_NUM_CDC,
+  ITF_NUM_CDC_DATA,
+  ITF_NUM_HID,
+  ITF_NUM_RPI_RESET,
+  ITF_NUM_TOTAL,
 };
 
 #define TUD_RPI_RESET_DESC_LEN 9
 
-#define CONFIG_TOTAL_LEN \
-    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_HID_DESC_LEN + \
-     TUD_RPI_RESET_DESC_LEN)
+#define CONFIG_TOTAL_LEN                                                       \
+  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_HID_DESC_LEN +                 \
+   TUD_RPI_RESET_DESC_LEN)
 
 #define EPNUM_CDC_NOTIF 0x81
-#define EPNUM_CDC_OUT   0x02
-#define EPNUM_CDC_IN    0x82
-#define EPNUM_HID       0x83
+#define EPNUM_CDC_OUT 0x02
+#define EPNUM_CDC_IN 0x82
+#define EPNUM_HID 0x83
 
-#define TUD_RPI_RESET_DESCRIPTOR(_itfnum, _stridx)                          \
-    9, TUSB_DESC_INTERFACE, _itfnum, 0, 0, TUSB_CLASS_VENDOR_SPECIFIC,      \
-        RESET_INTERFACE_SUBCLASS, RESET_INTERFACE_PROTOCOL, _stridx
+#define TUD_RPI_RESET_DESCRIPTOR(_itfnum, _stridx)                             \
+  9, TUSB_DESC_INTERFACE, _itfnum, 0, 0, TUSB_CLASS_VENDOR_SPECIFIC,           \
+      RESET_INTERFACE_SUBCLASS, RESET_INTERFACE_PROTOCOL, _stridx
 
 uint8_t const desc_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN,
@@ -79,8 +79,8 @@ uint8_t const desc_configuration[] = {
 };
 
 uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
-    (void)index;
-    return desc_configuration;
+  (void)index;
+  return desc_configuration;
 }
 
 static char serial_str[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1];
@@ -97,35 +97,34 @@ char const *string_desc_arr[] = {
 static uint16_t _desc_str[32 + 1];
 
 uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
-    (void)langid;
-    size_t chr_count;
+  (void)langid;
+  size_t chr_count;
 
-    if (!serial_str[0]) {
-        pico_get_unique_board_id_string(serial_str, sizeof(serial_str));
+  if (!serial_str[0]) {
+    pico_get_unique_board_id_string(serial_str, sizeof(serial_str));
+  }
+
+  switch (index) {
+  case 0:
+    memcpy(&_desc_str[1], string_desc_arr[0], 2);
+    chr_count = 1;
+    break;
+  default:
+    if (index >= sizeof(string_desc_arr) / sizeof(string_desc_arr[0]))
+      return NULL;
+
+    const char *str = string_desc_arr[index];
+    chr_count = strlen(str);
+    size_t const max_count = sizeof(_desc_str) / sizeof(_desc_str[0]) - 1;
+    if (chr_count > max_count)
+      chr_count = max_count;
+
+    for (size_t i = 0; i < chr_count; i++) {
+      _desc_str[1 + i] = str[i];
     }
+    break;
+  }
 
-    switch (index) {
-    case 0:
-        memcpy(&_desc_str[1], string_desc_arr[0], 2);
-        chr_count = 1;
-        break;
-    default:
-        if (index >= sizeof(string_desc_arr) / sizeof(string_desc_arr[0]))
-            return NULL;
-
-        const char *str = string_desc_arr[index];
-        chr_count = strlen(str);
-        size_t const max_count = sizeof(_desc_str) / sizeof(_desc_str[0]) - 1;
-        if (chr_count > max_count)
-            chr_count = max_count;
-
-        for (size_t i = 0; i < chr_count; i++) {
-            _desc_str[1 + i] = str[i];
-        }
-        break;
-    }
-
-    _desc_str[0] =
-        (uint16_t)((TUSB_DESC_STRING << 8) | (2 * chr_count + 2));
-    return _desc_str;
+  _desc_str[0] = (uint16_t)((TUSB_DESC_STRING << 8) | (2 * chr_count + 2));
+  return _desc_str;
 }
