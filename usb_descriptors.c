@@ -4,8 +4,8 @@
 
 #include "usb_hid.h"
 
-#define USB_VID 0x1209
-#define USB_PID 0x2641
+#define USB_VID 0x1209 // USB vendor id (https://pid.codes/1209/)
+#define USB_PID 0x2641 // USB product id (https://pid.codes/1209/2641/)
 #define USB_BCD 0x0200
 
 tusb_desc_device_t const desc_device = {

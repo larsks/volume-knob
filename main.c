@@ -9,9 +9,14 @@
 // Quadrature state transition table.
 // Index: (prev_AB << 2) | curr_AB
 // Values: 0 = invalid/no change, 1 = CW, -1 = CCW
+// clang-format off
 static const int8_t encoder_table[16] = {
-    0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0,
+  0,  -1, 1,   0,
+  1,  0,  0,   -1,
+  -1, 0,  0,  1,
+  0, 1, -1, 0,
 };
+// clang-format on
 
 static uint8_t encoder_prev_state;
 static int32_t encoder_accum;
@@ -37,6 +42,9 @@ static void encoder_init(void) {
   key_is_pressed = false;
 }
 
+// Generate a key event if the USB HID endpoint is ready to accept a new
+// report. Return true if the endpoint was ready, false if it was not and we
+// did not send a key.
 static bool send_consumer_key(uint16_t usage) {
   if (!tud_hid_ready())
     return false;
@@ -47,6 +55,10 @@ static bool send_consumer_key(uint16_t usage) {
 
 static void encoder_task(void) {
   uint8_t curr = read_encoder_state();
+
+  // Create an index into the encoder table by combining
+  // the previous encoder state and the current encoder state.
+  // This is effectively creating a (x,y) tuple.
   uint8_t index = (encoder_prev_state << 2) | curr;
   encoder_prev_state = curr;
 
@@ -66,9 +78,8 @@ static void encoder_task(void) {
 }
 
 static void release_task(void) {
-  if (key_is_pressed && tud_hid_ready()) {
+  if (key_is_pressed)
     send_consumer_key(0);
-  }
 }
 
 int main(void) {
@@ -84,14 +95,18 @@ int main(void) {
   }
 }
 
+void tud_suspend_cb(bool remote_wakeup_en) { (void)remote_wakeup_en; }
+
+// In order for everything to build properly, we must define these functions
+// even if we're not implementing them.
 void tud_mount_cb(void) {}
 void tud_umount_cb(void) {}
-void tud_suspend_cb(bool remote_wakeup_en) { (void)remote_wakeup_en; }
 void tud_resume_cb(void) {}
 
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id,
                                hid_report_type_t report_type, uint8_t *buffer,
                                uint16_t reqlen) {
+  // Suppress "unused parameter" compiler warnings.
   (void)instance;
   (void)report_id;
   (void)report_type;
@@ -103,6 +118,7 @@ uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id,
 void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize) {
+  // Suppress "unused parameter" compiler warnings.
   (void)instance;
   (void)report_id;
   (void)report_type;
