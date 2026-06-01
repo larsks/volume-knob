@@ -25,6 +25,7 @@ static config_t config;
 static uint8_t encoder_prev_state;
 static int32_t encoder_accum;
 static bool key_is_pressed;
+static uint8_t last_key_type;
 
 static uint8_t read_encoder_state(void) {
   uint8_t a = gpio_get(ENCODER_PIN_A) ? 1 : 0;
@@ -46,14 +47,36 @@ static void encoder_init(void) {
   key_is_pressed = false;
 }
 
-// Generate a key event if the USB HID endpoint is ready to accept a new
-// report. Return true if the endpoint was ready, false if it was not and we
-// did not send a key.
-static bool send_consumer_key(uint16_t usage) {
+static bool send_key(uint8_t type, uint16_t code) {
   if (!tud_hid_ready())
     return false;
-  tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &usage, sizeof(usage));
-  key_is_pressed = (usage != 0);
+
+  if (type == KEY_TYPE_KEYBOARD) {
+    uint8_t report[8] = {0};
+    report[2] = (uint8_t)code;
+    tud_hid_report(REPORT_ID_KEYBOARD, report, sizeof(report));
+  } else {
+    tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &code, sizeof(code));
+  }
+
+  key_is_pressed = true;
+  last_key_type = type;
+  return true;
+}
+
+static bool release_key(void) {
+  if (!tud_hid_ready())
+    return false;
+
+  if (last_key_type == KEY_TYPE_KEYBOARD) {
+    uint8_t report[8] = {0};
+    tud_hid_report(REPORT_ID_KEYBOARD, report, sizeof(report));
+  } else {
+    uint16_t zero = 0;
+    tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &zero, sizeof(zero));
+  }
+
+  key_is_pressed = false;
   return true;
 }
 
@@ -73,17 +96,17 @@ static void encoder_task(void) {
   encoder_accum += delta;
 
   if (encoder_accum >= config.divider) {
-    if (send_consumer_key(config.key_cw))
+    if (send_key(config.type_cw, config.key_cw))
       encoder_accum = 0;
   } else if (encoder_accum <= -config.divider) {
-    if (send_consumer_key(config.key_ccw))
+    if (send_key(config.type_ccw, config.key_ccw))
       encoder_accum = 0;
   }
 }
 
 static void release_task(void) {
   if (key_is_pressed)
-    send_consumer_key(0);
+    release_key();
 }
 
 int main(void) {
@@ -115,7 +138,7 @@ uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id,
   (void)reqlen;
 
   if (instance == HID_INSTANCE_CONFIG && report_id == REPORT_ID_CONFIG) {
-    memcpy(buffer, &config.key_cw, CONFIG_REPORT_SIZE);
+    memcpy(buffer, &config.type_cw, CONFIG_REPORT_SIZE);
     return CONFIG_REPORT_SIZE;
   }
 
@@ -131,7 +154,7 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id,
     return;
 
   if (report_id == REPORT_ID_CONFIG && bufsize >= CONFIG_REPORT_SIZE) {
-    memcpy(&config.key_cw, buffer, CONFIG_REPORT_SIZE);
+    memcpy(&config.type_cw, buffer, CONFIG_REPORT_SIZE);
   } else if (report_id == REPORT_ID_COMMAND && bufsize >= COMMAND_REPORT_SIZE) {
     uint8_t cmd = buffer[0];
     if (cmd == CONFIG_CMD_SAVE)

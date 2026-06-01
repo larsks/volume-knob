@@ -1,5 +1,6 @@
 #include "persist.h"
 #include "config.h"
+#include "usb_hid.h"
 
 #include "hardware/flash.h"
 #include "hardware/sync.h"
@@ -26,10 +27,11 @@ static uint32_t crc32(const void *data, size_t len) {
 
 void config_set_defaults(config_t *cfg) {
   cfg->magic = CONFIG_MAGIC;
+  cfg->type_cw = KEY_TYPE_CONSUMER;
+  cfg->type_ccw = KEY_TYPE_CONSUMER;
   cfg->key_cw = DEFAULT_KEY_CW;
   cfg->key_ccw = DEFAULT_KEY_CCW;
   cfg->divider = DEFAULT_ENCODER_DIVIDER;
-  cfg->_reserved = 0;
   cfg->crc32 = 0;
 }
 
@@ -57,7 +59,6 @@ static void __no_inline_not_in_flash_func(do_flash_write)(const config_t *cfg) {
 void config_save(const config_t *cfg) {
   config_t tmp = *cfg;
   tmp.magic = CONFIG_MAGIC;
-  tmp._reserved = 0;
   tmp.crc32 = crc32(&tmp, offsetof(config_t, crc32));
   do_flash_write(&tmp);
 }

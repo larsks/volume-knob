@@ -31,6 +31,7 @@ uint8_t const *tud_descriptor_device_cb(void) {
 
 uint8_t const desc_hid_report_consumer[] = {
     TUD_HID_REPORT_DESC_CONSUMER(HID_REPORT_ID(REPORT_ID_CONSUMER_CONTROL)),
+    TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(REPORT_ID_KEYBOARD)),
 };
 
 // clang-format off
@@ -39,13 +40,13 @@ uint8_t const desc_hid_report_config[] = {
     0x09, 0x01,                    // Usage (Vendor Usage 1)
     0xA1, 0x01,                    // Collection (Application)
 
-    // Report ID 1: Config Data (feature report, 3x uint16)
+    // Report ID 1: Config Data (feature report, 8 bytes)
     0x85, REPORT_ID_CONFIG,        //   Report ID
     0x09, 0x02,                    //   Usage (Vendor Usage 2)
     0x15, 0x00,                    //   Logical Minimum (0)
-    0x27, 0xFF, 0xFF, 0x00, 0x00,  //   Logical Maximum (65535)
-    0x75, 0x10,                    //   Report Size (16)
-    0x95, 0x03,                    //   Report Count (3)
+    0x26, 0xFF, 0x00,              //   Logical Maximum (255)
+    0x75, 0x08,                    //   Report Size (8)
+    0x95, 0x08,                    //   Report Count (8)
     0xB1, 0x02,                    //   Feature (Data, Variable, Absolute)
 
     // Report ID 2: Command (feature report, 1x uint8)

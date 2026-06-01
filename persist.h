@@ -3,17 +3,18 @@
 
 #include <stdint.h>
 
-#define CONFIG_MAGIC 0x564B4346 // "VKCF"
+#define CONFIG_MAGIC 0x564B4332 // "VKC2"
 #define CONFIG_CMD_SAVE 1
 #define CONFIG_CMD_LOAD 2
 #define CONFIG_CMD_DEFAULTS 3
 
 typedef struct {
   uint32_t magic;
+  uint8_t type_cw;
+  uint8_t type_ccw;
   uint16_t key_cw;
   uint16_t key_ccw;
   uint16_t divider;
-  uint16_t _reserved;
   uint32_t crc32;
 } config_t;
 
