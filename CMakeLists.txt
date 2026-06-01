@@ -15,6 +15,7 @@ add_executable(volume_knob
     main.c
     persist.c
     usb_descriptors.c
+    version.c
 )
 
 target_include_directories(volume_knob PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -39,5 +40,7 @@ target_link_libraries(volume_knob
     tinyusb_device
     tinyusb_board
 )
+
+target_link_options(volume_knob PRIVATE "LINKER:--undefined=version_info")
 
 pico_add_extra_outputs(volume_knob)
