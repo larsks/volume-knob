@@ -19,13 +19,41 @@ In [config.h](config.h), you may want to set:
 
   Defines the GPIOs to which the encoder outputs are attached.
 
-- `KEY_CW`, `KEY_CCW`
+- `DEFAULT_KEY_CW`, `DEFAULT_KEY_CCW`
 
   Defines which key events are sent on clockwise and counter-clockwise rotation. Defaults to volume up/volume down.
 
-- `ENCODER_DIVIDER`
+- `DEFAULT_ENCODER_DIVIDER`
 
   Defines how many events we need to receive from the encoder before generating a key event.
+
+### Runtime Configuration
+
+You may also configure these values at runtime using the `vkcfg` tool (located in the [tools/](tools/) subdirectory). To view the current configuration:
+
+```sh
+$ vkcfg get
+key_cw   = volume_increment
+key_ccw  = volume_decrement
+divider  = 256
+```
+
+To configure the knob to send up arrow/down arrow instead of volume up/volume down:
+
+```sh
+$ vkcfg set --cw arrow_up --ccw arrow_down
+OK
+$ vkcfg get
+key_cw   = arrow_up
+key_ccw  = arrow_down
+divider  = 256
+```
+
+To save the configuration to flash so that it will persist after a reboot:
+
+```sh
+$ vkcfg save
+```
 
 ## Building
 
