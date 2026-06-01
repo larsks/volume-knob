@@ -84,7 +84,7 @@ static char serial_str[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1];
 
 char const *string_desc_arr[] = {
     [0] = (const char[]){0x09, 0x04},
-    [1] = "Volume Knob",
+    [1] = "The Odd Bit",
     [2] = "Volume Knob",
     [3] = serial_str,
     [4] = "Board CDC",
