@@ -4,6 +4,7 @@
 #include "tusb.h"
 
 #include "config.h"
+#include "usb_hid.h"
 
 // Quadrature state transition table.
 // Index: (prev_AB << 2) | curr_AB

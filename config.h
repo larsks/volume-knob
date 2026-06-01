@@ -1,8 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define REPORT_ID_CONSUMER_CONTROL 1
-
 #define ENCODER_PIN_A 28
 #define ENCODER_PIN_B 29
 

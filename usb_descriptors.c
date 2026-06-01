@@ -2,7 +2,7 @@
 #include "pico/unique_id.h"
 #include "tusb.h" // IWYU pragma: keep
 
-#include "config.h"
+#include "usb_hid.h"
 
 #define USB_VID 0x1209
 #define USB_PID 0x2641
