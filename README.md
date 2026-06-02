@@ -1,15 +1,29 @@
 # Volume knob
 
-Use a Raspberry Pi Pico to turn a quadrature encoder into a volume knob for your computer. Works great with something like <https://a.co/d/04KHyvDu>:
+Use a Waveshare RP2040-Zero to turn a quadrature encoder into a
+volume knob for your computer. Works great with something like
+<https://a.co/d/04KHyvDu>:
 
 ![Picture of a quadrature encoder](encoder.jpg)
 
-## Hardware
+## Requirements
 
-You will need a [Raspberry Pi Pico] or something similar (I use a [Waveshare RP2040-Zero]).
+### Hardware
+
+You will need a [Waveshare RP2040-Zero]. This is very similar to a [Raspberry Pi Pico] and the code will probably work with a Pico with only minimal changes (e.g., changing the `PICO_BOARD` setting in `CMakeLists.txt`).
 
 [raspberry pi pico]: https://www.waveshare.com/wiki/RP2040-Zero
 [waveshare RP2040-Zero]: https://www.waveshare.com/wiki/RP2040-Zero
+
+### Software
+
+If you intend to build the firmware from source, you will need:
+
+- [pico-sdk]
+- [picotool]
+
+[pico-sdk]: https://github.com/raspberrypi/pico-sdk
+[picotool]: https://github.com/raspberrypi/picotool
 
 ## Configuration
 
@@ -49,7 +63,7 @@ key_ccw  = arrow_down
 divider  = 256
 ```
 
-To save the configuration to flash so that it will persist after a reboot:
+To save the configuration to flash so that it will persist after a device reboot:
 
 ```sh
 $ vkcfg save
@@ -59,37 +73,20 @@ $ vkcfg save
 
 This is a [pico-sdk]-based project. You will need a copy of the [pico-sdk], and you will need to set the `PICO_SDK_PATH` environment variable to point to the location of the sdk directory.
 
-[pico-sdk]: https://github.com/raspberrypi/pico-sdk
+To build from source:
 
-## Updating the device
+```sh
+cmake -B build
+make -C build
+```
 
-After building new code:
+## Installing the firmware
 
-1. `picotool info -f --vid 0x1209 --pid 0x2641`
+After building from source:
 
-    This will reboot the Pico into bootsel mode. The command will fail like this:
+1. `vkcfg bootsel`
 
-    ```
-    Tracking device serial number E66138935F4C6724 for reboot
-    The device was asked to reboot into BOOTSEL mode so the command can be executed.
-    Waiting for device to reboot.........
-
-    Despite the reboot attempt, no accessible RP-series devices in BOOTSEL mode
-    were found found with serial number E66138935F4C6724. It is possible the
-    device is not responding, and will have to be manually entered into BOOTSEL
-    mode.
-    ```
-
-    That's because the VID/PID change when it reboots. You can verify that it was successful by using your kernel log, which should show something like:
-
-    ```
-    kernel: usb 1-8: new full-speed USB device number 47 using xhci_hcd
-    kernel: usb 1-8: New USB device found, idVendor=2e8a, idProduct=0003, bcdDevice= 1.00
-    kernel: usb 1-8: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-    kernel: usb 1-8: Product: RP2 Boot
-    kernel: usb 1-8: Manufacturer: Raspberry Pi
-    kernel: usb 1-8: SerialNumber: E0C9125B0D9B
-    ```
+    This will reboot the Pico into bootsel mode.
 
 1. `picotool load build/volume_knob.uf2 -x`
 
