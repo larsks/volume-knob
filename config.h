@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "tusb.h"
+#include "tusb.h" // IWYU pragma: keep
 
 // These values define the GPIOs to which the encoder outputs are connected
 #define ENCODER_PIN_A 28
