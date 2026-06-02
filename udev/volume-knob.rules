@@ -1,0 +1,8 @@
+# Grant group 'input' access to /dev/hidraw device for volume knob so that
+# vkcfg can communicate without requiring root privileges.
+SUBSYSTEM=="hidraw", \
+    ATTRS{idVendor}=="1209", \
+    ATTRS{idProduct}=="2641", \
+    TAG+="uaccess" \
+    MODE="660", \
+    GROUP="input"
