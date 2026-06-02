@@ -1,6 +1,6 @@
 #include "bsp/board_api.h"
 #include "hardware/gpio.h"
-#include "pico/stdio.h"
+#include "pico/bootrom.h"
 #include "tusb.h"
 
 #include <string.h>
@@ -112,7 +112,6 @@ static void release_task(void) {
 int main(void) {
   board_init();
   tusb_init();
-  stdio_init_all();
   config_load(&config);
   encoder_init();
 
@@ -163,5 +162,7 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id,
       config_load(&config);
     else if (cmd == CONFIG_CMD_DEFAULTS)
       config_set_defaults(&config);
+    else if (cmd == CONFIG_CMD_BOOTSEL)
+      reset_usb_boot(0, 0);
   }
 }

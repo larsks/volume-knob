@@ -1,4 +1,3 @@
-#include "pico/stdio_usb/reset_interface.h" // IWYU pragma: keep
 #include "pico/unique_id.h"
 #include "tusb.h" // IWYU pragma: keep
 
@@ -12,9 +11,9 @@ tusb_desc_device_t const desc_device = {
     .bLength = sizeof(tusb_desc_device_t),
     .bDescriptorType = TUSB_DESC_DEVICE,
     .bcdUSB = USB_BCD,
-    .bDeviceClass = TUSB_CLASS_MISC,
-    .bDeviceSubClass = MISC_SUBCLASS_COMMON,
-    .bDeviceProtocol = MISC_PROTOCOL_IAD,
+    .bDeviceClass = 0,
+    .bDeviceSubClass = 0,
+    .bDeviceProtocol = 0,
     .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
     .idVendor = USB_VID,
     .idProduct = USB_PID,
@@ -53,7 +52,7 @@ uint8_t const desc_hid_report_config[] = {
     0x85, REPORT_ID_COMMAND,       //   Report ID
     0x09, 0x03,                    //   Usage (Vendor Usage 3)
     0x15, 0x00,                    //   Logical Minimum (0)
-    0x25, 0x03,                    //   Logical Maximum (3)
+    0x25, 0x04,                    //   Logical Maximum (4)
     0x75, 0x08,                    //   Report Size (8)
     0x95, 0x01,                    //   Report Count (1)
     0xB1, 0x02,                    //   Feature (Data, Variable, Absolute)
@@ -69,46 +68,27 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
 }
 
 enum {
-  ITF_NUM_CDC,
-  ITF_NUM_CDC_DATA,
   ITF_NUM_HID,
   ITF_NUM_HID_CONFIG,
-  ITF_NUM_RPI_RESET,
   ITF_NUM_TOTAL,
 };
 
-#define TUD_RPI_RESET_DESC_LEN 9
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN)
 
-#define CONFIG_TOTAL_LEN                                                       \
-  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + 2 * TUD_HID_DESC_LEN +            \
-   TUD_RPI_RESET_DESC_LEN)
-
-#define EPNUM_CDC_NOTIF 0x81
-#define EPNUM_CDC_OUT 0x02
-#define EPNUM_CDC_IN 0x82
-#define EPNUM_HID 0x83
-#define EPNUM_HID_CONFIG 0x84
-
-#define TUD_RPI_RESET_DESCRIPTOR(_itfnum, _stridx)                             \
-  9, TUSB_DESC_INTERFACE, _itfnum, 0, 0, TUSB_CLASS_VENDOR_SPECIFIC,           \
-      RESET_INTERFACE_SUBCLASS, RESET_INTERFACE_PROTOCOL, _stridx
+#define EPNUM_HID 0x81
+#define EPNUM_HID_CONFIG 0x82
 
 uint8_t const desc_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN,
                           TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
 
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT,
-                       EPNUM_CDC_IN, 64),
-
     TUD_HID_DESCRIPTOR(ITF_NUM_HID, 0, HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_consumer), EPNUM_HID,
                        CFG_TUD_HID_EP_BUFSIZE, 5),
 
-    TUD_HID_DESCRIPTOR(ITF_NUM_HID_CONFIG, 6, HID_ITF_PROTOCOL_NONE,
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_CONFIG, 4, HID_ITF_PROTOCOL_NONE,
                        sizeof(desc_hid_report_config), EPNUM_HID_CONFIG,
                        CFG_TUD_HID_EP_BUFSIZE, 5),
-
-    TUD_RPI_RESET_DESCRIPTOR(ITF_NUM_RPI_RESET, 5),
 };
 
 uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
@@ -123,9 +103,7 @@ char const *string_desc_arr[] = {
     [1] = "The Odd Bit",
     [2] = "Volume Knob",
     [3] = serial_str,
-    [4] = "Board CDC",
-    [5] = "Reset",
-    [6] = "Config",
+    [4] = "Config",
 };
 
 static uint16_t _desc_str[32 + 1];

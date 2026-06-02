@@ -7,9 +7,6 @@
 // a valid configuration. It should be udpated whenever
 // the config_t struct changes.
 #define CONFIG_MAGIC 0x564B4332 // "VKC2"
-#define CONFIG_CMD_SAVE 1
-#define CONFIG_CMD_LOAD 2
-#define CONFIG_CMD_DEFAULTS 3
 
 typedef struct {
   uint32_t magic;

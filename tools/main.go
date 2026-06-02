@@ -20,7 +20,7 @@ const (
 	vid               = 0x1209
 	pid               = 0x2641
 	vendorUsagePage   = 0xFF00
-	configIfaceNumber = 3
+	configIfaceNumber = 1
 
 	reportIDConfig  = 1
 	reportIDCommand = 2
@@ -30,6 +30,7 @@ const (
 	cmdSave     = 1
 	cmdLoad     = 2
 	cmdDefaults = 3
+	cmdBootsel  = 4
 
 	keyTypeConsumer = 0
 	keyTypeKeyboard = 1
@@ -369,6 +370,7 @@ Commands:
   save       persist current config to flash
   load       reload config from flash
   defaults   reset to compiled-in defaults
+  bootsel    reboot device into BOOTSEL mode
   list-keys  list known key names`)
 	os.Exit(1)
 }
@@ -493,6 +495,8 @@ func main() {
 		cmdSimple(dev, cmdLoad)
 	case "defaults":
 		cmdSimple(dev, cmdDefaults)
+	case "bootsel":
+		cmdSimple(dev, cmdBootsel)
 	default:
 		usage()
 	}
