@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.0 (2026-06-02)
+
+### Feat
+
+- Use hidraw interface instead of libusb to talk to knob
+
+### Fix
+
+- Avoid more linter warnings
+- Code cleanup and comments
+- Remove erroneous capitalization
+
 ## v0.2.0 (2026-06-01)
 
 ### Feat
