@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -220,12 +221,14 @@ var allKeys = map[string]keyDef{
 var keyNames map[keyDef]string
 
 func init() {
+	// Prepare a reverse map of keycodes to names
 	keyNames = make(map[keyDef]string, len(allKeys))
 	for name, def := range allKeys {
 		keyNames[def] = name
 	}
 }
 
+// Given a key type and code, return the string representation.
 func keyName(kt uint8, code uint16) string {
 	if name, ok := keyNames[keyDef{kt, code}]; ok {
 		return name
@@ -237,6 +240,7 @@ func keyName(kt uint8, code uint16) string {
 	return fmt.Sprintf("%s:0x%04X", prefix, code)
 }
 
+// Given the string representation of a key, return the corresponding keyDef.
 func parseKey(s string) (keyDef, error) {
 	name := strings.ToLower(s)
 	if def, ok := allKeys[name]; ok {
@@ -249,23 +253,30 @@ func parseKey(s string) (keyDef, error) {
 	return keyDef{keyTypeConsumer, uint16(v)}, nil
 }
 
+// Open the device and return an hid.Device to the caller.
 func openDevice() (*hid.Device, error) {
 	var path string
-	hid.Enumerate(vid, pid, func(info *hid.DeviceInfo) error {
+	err := hid.Enumerate(vid, pid, func(info *hid.DeviceInfo) error {
 		if info.UsagePage == vendorUsagePage {
 			path = info.Path
 			return errFound
 		}
 		return nil
 	})
+	if err != nil && !errors.Is(err, errFound) {
+		return nil, fmt.Errorf("enumerating HID devices: %w", err)
+	}
 	if path == "" {
-		hid.Enumerate(vid, pid, func(info *hid.DeviceInfo) error {
+		err := hid.Enumerate(vid, pid, func(info *hid.DeviceInfo) error {
 			if info.InterfaceNbr == configIfaceNumber {
 				path = info.Path
 				return errFound
 			}
 			return nil
 		})
+		if err != nil && !errors.Is(err, errFound) {
+			return nil, fmt.Errorf("enumerating HID devices: %w", err)
+		}
 	}
 	if path == "" {
 		return nil, fmt.Errorf("volume knob not found")
@@ -278,6 +289,7 @@ func openDevice() (*hid.Device, error) {
 	return dev, nil
 }
 
+// This is the configuration structure stored in the device flash.
 type config struct {
 	typeCW  uint8
 	typeCCW uint8
@@ -286,23 +298,32 @@ type config struct {
 	divider uint16
 }
 
-func getConfig(dev *hid.Device) (config, error) {
-	buf := make([]byte, configReportSize+1)
-	buf[0] = reportIDConfig
-	_, err := dev.GetFeatureReport(buf)
-	if err != nil {
-		return config{}, err
+func newConfig(typeCW, typeCCW uint8, keyCW, keyCCW, divider uint16) config {
+	return config{
+		typeCW:  typeCW,
+		typeCCW: typeCCW,
+		keyCW:   keyCW,
+		keyCCW:  keyCCW,
+		divider: divider,
 	}
-	var cfg config
-	cfg.typeCW = buf[1]
-	cfg.typeCCW = buf[2]
-	cfg.keyCW = binary.LittleEndian.Uint16(buf[3:5])
-	cfg.keyCCW = binary.LittleEndian.Uint16(buf[5:7])
-	cfg.divider = binary.LittleEndian.Uint16(buf[7:9])
-	return cfg, nil
 }
 
-func setConfig(dev *hid.Device, cfg config) error {
+// Convert device representation of config into struct.
+func configFromBuf(buf []byte) config {
+	if len(buf) != configReportSize+1 {
+		log.Fatalf("device configuration is invalid")
+	}
+	return newConfig(
+		buf[1],
+		buf[2],
+		binary.LittleEndian.Uint16(buf[3:5]),
+		binary.LittleEndian.Uint16(buf[5:7]),
+		binary.LittleEndian.Uint16(buf[7:9]),
+	)
+}
+
+// Convert config struct into binary representation for device.
+func configToBuf(reportId uint8, cfg config) []byte {
 	buf := make([]byte, configReportSize+1)
 	buf[0] = reportIDConfig
 	buf[1] = cfg.typeCW
@@ -310,6 +331,25 @@ func setConfig(dev *hid.Device, cfg config) error {
 	binary.LittleEndian.PutUint16(buf[3:5], cfg.keyCW)
 	binary.LittleEndian.PutUint16(buf[5:7], cfg.keyCCW)
 	binary.LittleEndian.PutUint16(buf[7:9], cfg.divider)
+
+	return buf
+}
+
+// Read configuration from the device.
+func getConfig(dev *hid.Device) (config, error) {
+	buf := make([]byte, configReportSize+1)
+	buf[0] = reportIDConfig
+	_, err := dev.GetFeatureReport(buf)
+	if err != nil {
+		return config{}, err
+	}
+	cfg := configFromBuf(buf)
+	return cfg, nil
+}
+
+// Send configuration to the device.
+func setConfig(dev *hid.Device, cfg config) error {
+	buf := configToBuf(reportIDConfig, cfg)
 	_, err := dev.SendFeatureReport(buf)
 	return err
 }
@@ -318,11 +358,6 @@ func sendCommand(dev *hid.Device, cmd byte) error {
 	buf := []byte{reportIDCommand, cmd}
 	_, err := dev.SendFeatureReport(buf)
 	return err
-}
-
-func fatal(err error) {
-	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-	os.Exit(1)
 }
 
 func usage() {
@@ -338,32 +373,37 @@ Commands:
 	os.Exit(1)
 }
 
+// Get and display the current configuration.
 func cmdGet(dev *hid.Device) {
 	cfg, err := getConfig(dev)
 	if err != nil {
-		fatal(err)
+		log.Fatalf("ERROR: %v", err)
 	}
 	fmt.Printf("key_cw   = %s\n", keyName(cfg.typeCW, cfg.keyCW))
 	fmt.Printf("key_ccw  = %s\n", keyName(cfg.typeCCW, cfg.keyCCW))
 	fmt.Printf("divider  = %d\n", cfg.divider)
 }
 
+// Update the configuration. First get the configuration from the device, then
+// update it with any new values before sending it back to the device.
 func cmdSet(dev *hid.Device, args []string) {
 	fs := flag.NewFlagSet("set", flag.ExitOnError)
 	cwStr := fs.String("cw", "", "clockwise key (e.g. volume_increment, a, f1, 0xE9)")
 	ccwStr := fs.String("ccw", "", "counter-clockwise key (e.g. volume_decrement, b, f2, 0xEA)")
 	dividerStr := fs.String("divider", "", "encoder divider")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		log.Fatalf("ERROR: failed to parse arguments")
+	}
 
 	cfg, err := getConfig(dev)
 	if err != nil {
-		fatal(err)
+		log.Fatalf("ERROR: %v", err)
 	}
 
 	if *cwStr != "" {
 		k, err := parseKey(*cwStr)
 		if err != nil {
-			fatal(err)
+			log.Fatalf("ERROR: %v", err)
 		}
 		cfg.typeCW = k.keyType
 		cfg.keyCW = k.code
@@ -371,7 +411,7 @@ func cmdSet(dev *hid.Device, args []string) {
 	if *ccwStr != "" {
 		k, err := parseKey(*ccwStr)
 		if err != nil {
-			fatal(err)
+			log.Fatalf("ERROR: %v", err)
 		}
 		cfg.typeCCW = k.keyType
 		cfg.keyCCW = k.code
@@ -379,24 +419,26 @@ func cmdSet(dev *hid.Device, args []string) {
 	if *dividerStr != "" {
 		v, err := strconv.ParseUint(*dividerStr, 0, 16)
 		if err != nil {
-			fatal(fmt.Errorf("invalid divider: %v", err))
+			log.Fatalf("ERROR: invalid divider: %v", err)
 		}
 		cfg.divider = uint16(v)
 	}
 
 	if err := setConfig(dev, cfg); err != nil {
-		fatal(err)
+		log.Fatalf("ERROR: %v", err)
 	}
 	fmt.Println("OK")
 }
 
+// Send a simple command (one that does not require client-side logic) to the device.
 func cmdSimple(dev *hid.Device, cmd byte) {
 	if err := sendCommand(dev, cmd); err != nil {
-		fatal(err)
+		log.Fatalf("ERROR: %v", err)
 	}
 	fmt.Println("OK")
 }
 
+// Show a list of available key names.
 func cmdListKeys() {
 	names := make([]string, 0, len(allKeys))
 	for name := range allKeys {
@@ -414,6 +456,8 @@ func cmdListKeys() {
 }
 
 func main() {
+	log.SetFlags(0)
+	log.SetPrefix("vkcfg: ")
 	if len(os.Args) < 2 {
 		usage()
 	}
@@ -426,14 +470,16 @@ func main() {
 	}
 
 	if err := hid.Init(); err != nil {
-		fatal(err)
+		log.Fatalf("ERROR: %v", err)
 	}
+	// nolint:errcheck
 	defer hid.Exit()
 
 	dev, err := openDevice()
 	if err != nil {
-		fatal(err)
+		log.Fatalf("ERROR: %v", err)
 	}
+	// nolint:errcheck
 	defer dev.Close()
 
 	switch cmd {
