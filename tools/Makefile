@@ -1,5 +1,5 @@
 BINARY = vkcfg
-BUILDFLAGS = -tags libusb
+BUILDFLAGS =
 
 $(BINARY): $(wildcard *.go) go.mod go.sum
 	go build $(BUILDFLAGS) -o $@ .
