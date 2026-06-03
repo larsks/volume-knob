@@ -107,14 +107,6 @@ void tud_hid_report_complete_cb(uint8_t instance, uint8_t const *report,
   tud_hid_n_report(instance, report[0], release, len - 1);
 }
 
-void tud_suspend_cb(bool remote_wakeup_en) { (void)remote_wakeup_en; }
-
-// In order for everything to build properly, we must define these functions
-// even if we're not implementing them.
-void tud_mount_cb(void) {}
-void tud_umount_cb(void) {}
-void tud_resume_cb(void) {}
-
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id,
                                hid_report_type_t report_type, uint8_t *buffer,
                                uint16_t reqlen) {
