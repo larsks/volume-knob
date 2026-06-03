@@ -577,6 +577,8 @@ func main() {
 		cmdSimple(dev, cmdDefaults)
 	case "bootsel":
 		cmdSimple(dev, cmdBootsel)
+	case "version":
+		cmdVersion()
 	default:
 		usage()
 	}
