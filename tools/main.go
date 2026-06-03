@@ -25,7 +25,8 @@ const (
 	reportIDConfig  = 1
 	reportIDCommand = 2
 
-	configReportSize = 10
+	configReportSize = 14
+	configMagic      = 0x564B4333
 
 	cmdSave     = 1
 	cmdLoad     = 2
@@ -373,27 +374,32 @@ func configFromBuf(buf []byte) config {
 	if len(buf) != configReportSize+1 {
 		log.Fatalf("device configuration is invalid")
 	}
+	magic := binary.LittleEndian.Uint32(buf[1:5])
+	if magic != configMagic {
+		log.Fatalf("firmware version mismatch (expected magic 0x%08X, got 0x%08X); please update firmware or vkcfg", configMagic, magic)
+	}
 	return config{
-		typeCW:  buf[1],
-		typeCCW: buf[2],
-		keyCW:   binary.LittleEndian.Uint16(buf[3:5]),
-		keyCCW:  binary.LittleEndian.Uint16(buf[5:7]),
-		divider: binary.LittleEndian.Uint16(buf[7:9]),
-		modCW:   buf[9],
-		modCCW:  buf[10],
+		typeCW:  buf[5],
+		typeCCW: buf[6],
+		keyCW:   binary.LittleEndian.Uint16(buf[7:9]),
+		keyCCW:  binary.LittleEndian.Uint16(buf[9:11]),
+		divider: binary.LittleEndian.Uint16(buf[11:13]),
+		modCW:   buf[13],
+		modCCW:  buf[14],
 	}
 }
 
 func configToBuf(reportId uint8, cfg config) []byte {
 	buf := make([]byte, configReportSize+1)
 	buf[0] = reportIDConfig
-	buf[1] = cfg.typeCW
-	buf[2] = cfg.typeCCW
-	binary.LittleEndian.PutUint16(buf[3:5], cfg.keyCW)
-	binary.LittleEndian.PutUint16(buf[5:7], cfg.keyCCW)
-	binary.LittleEndian.PutUint16(buf[7:9], cfg.divider)
-	buf[9] = cfg.modCW
-	buf[10] = cfg.modCCW
+	binary.LittleEndian.PutUint32(buf[1:5], configMagic)
+	buf[5] = cfg.typeCW
+	buf[6] = cfg.typeCCW
+	binary.LittleEndian.PutUint16(buf[7:9], cfg.keyCW)
+	binary.LittleEndian.PutUint16(buf[9:11], cfg.keyCCW)
+	binary.LittleEndian.PutUint16(buf[11:13], cfg.divider)
+	buf[13] = cfg.modCW
+	buf[14] = cfg.modCCW
 	return buf
 }
 

@@ -45,7 +45,7 @@ uint8_t const desc_hid_report_config[] = {
     0x15, 0x00,                    //   Logical Minimum (0)
     0x26, 0xFF, 0x00,              //   Logical Maximum (255)
     0x75, 0x08,                    //   Report Size (8)
-    0x95, 0x0A,                    //   Report Count (10)
+    0x95, 0x0E,                    //   Report Count (14)
     0xB1, 0x02,                    //   Feature (Data, Variable, Absolute)
 
     // Report ID 2: Command (feature report, 1x uint8)

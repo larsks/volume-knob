@@ -138,7 +138,7 @@ uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id,
   (void)reqlen;
 
   if (instance == HID_INSTANCE_CONFIG && report_id == REPORT_ID_CONFIG) {
-    memcpy(buffer, &config.type_cw, CONFIG_REPORT_SIZE);
+    memcpy(buffer, &config.magic, CONFIG_REPORT_SIZE);
     return CONFIG_REPORT_SIZE;
   }
 
@@ -154,7 +154,7 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id,
     return;
 
   if (report_id == REPORT_ID_CONFIG && bufsize >= CONFIG_REPORT_SIZE) {
-    memcpy(&config.type_cw, buffer, CONFIG_REPORT_SIZE);
+    memcpy(&config.magic, buffer, CONFIG_REPORT_SIZE);
   } else if (report_id == REPORT_ID_COMMAND && bufsize >= COMMAND_REPORT_SIZE) {
     uint8_t cmd = buffer[0];
     if (cmd == CONFIG_CMD_SAVE)
