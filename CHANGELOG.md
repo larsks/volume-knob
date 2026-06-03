@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.1.0 (2026-06-02)
+
+### Feat
+
+- Version check data returned from knob
+
+### Fix
+
+- Add version subcommand to vkcfg
+
 ## v1.0.0 (2026-06-02)
 
 ### Feat
