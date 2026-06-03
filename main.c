@@ -24,8 +24,7 @@ static const int8_t encoder_table[16] = {
 static config_t config;
 static uint8_t encoder_prev_state;
 static int32_t encoder_accum;
-static bool key_is_pressed;
-static uint8_t last_key_type;
+static bool pending_release;
 
 static uint8_t read_encoder_state(void) {
   uint8_t a = gpio_get(ENCODER_PIN_A) ? 1 : 0;
@@ -44,7 +43,6 @@ static void encoder_init(void) {
 
   encoder_prev_state = read_encoder_state();
   encoder_accum = 0;
-  key_is_pressed = false;
 }
 
 static bool send_key(uint8_t type, uint16_t code, uint8_t modifier) {
@@ -60,24 +58,7 @@ static bool send_key(uint8_t type, uint16_t code, uint8_t modifier) {
     tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &code, sizeof(code));
   }
 
-  key_is_pressed = true;
-  last_key_type = type;
-  return true;
-}
-
-static bool release_key(void) {
-  if (!tud_hid_ready())
-    return false;
-
-  if (last_key_type == KEY_TYPE_KEYBOARD) {
-    uint8_t report[8] = {0};
-    tud_hid_report(REPORT_ID_KEYBOARD, report, sizeof(report));
-  } else {
-    uint16_t zero = 0;
-    tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &zero, sizeof(zero));
-  }
-
-  key_is_pressed = false;
+  pending_release = true;
   return true;
 }
 
@@ -105,11 +86,6 @@ static void encoder_task(void) {
   }
 }
 
-static void release_task(void) {
-  if (key_is_pressed)
-    release_key();
-}
-
 int main(void) {
   board_init();
   tusb_init();
@@ -119,8 +95,16 @@ int main(void) {
   while (1) {
     tud_task();
     encoder_task();
-    release_task();
   }
+}
+
+void tud_hid_report_complete_cb(uint8_t instance, uint8_t const *report,
+                                uint16_t len) {
+  if (instance != HID_INSTANCE_CONSUMER || !pending_release)
+    return;
+  pending_release = false;
+  uint8_t release[8] = {0};
+  tud_hid_n_report(instance, report[0], release, len - 1);
 }
 
 void tud_suspend_cb(bool remote_wakeup_en) { (void)remote_wakeup_en; }
