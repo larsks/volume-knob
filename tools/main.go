@@ -25,7 +25,7 @@ const (
 	reportIDConfig  = 1
 	reportIDCommand = 2
 
-	configReportSize = 8
+	configReportSize = 10
 
 	cmdSave     = 1
 	cmdLoad     = 2
@@ -219,6 +219,22 @@ var allKeys = map[string]keyDef{
 	"gui_right":       {keyTypeKeyboard, 0xE7},
 }
 
+var modifierNames = map[string]uint8{
+	"ctrl":   0x01,
+	"shift":  0x02,
+	"alt":    0x04,
+	"gui":    0x08,
+	"rctrl":  0x10,
+	"rshift": 0x20,
+	"ralt":   0x40,
+	"rgui":   0x80,
+}
+
+var modifierBitNames = [8]string{
+	"ctrl", "shift", "alt", "gui",
+	"rctrl", "rshift", "ralt", "rgui",
+}
+
 var keyNames map[keyDef]string
 
 func init() {
@@ -241,7 +257,6 @@ func keyName(kt uint8, code uint16) string {
 	return fmt.Sprintf("%s:0x%04X", prefix, code)
 }
 
-// Given the string representation of a key, return the corresponding keyDef.
 func parseKey(s string) (keyDef, error) {
 	name := strings.ToLower(s)
 	if def, ok := allKeys[name]; ok {
@@ -252,6 +267,60 @@ func parseKey(s string) (keyDef, error) {
 		return keyDef{}, fmt.Errorf("unknown key name %q (use 'list-keys' to see valid names)", s)
 	}
 	return keyDef{keyTypeConsumer, uint16(v)}, nil
+}
+
+func parseKeyCombo(s string) (keyDef, uint8, error) {
+	parts := strings.Split(strings.ToLower(s), "+")
+
+	if len(parts) == 1 {
+		k, err := parseKey(parts[0])
+		return k, 0, err
+	}
+
+	var mod uint8
+	for _, p := range parts[:len(parts)-1] {
+		if p == "" {
+			return keyDef{}, 0, fmt.Errorf("empty modifier name")
+		}
+		bit, ok := modifierNames[p]
+		if !ok {
+			return keyDef{}, 0, fmt.Errorf("unknown modifier %q (valid: ctrl, shift, alt, gui, rctrl, rshift, ralt, rgui)", p)
+		}
+		if mod&bit != 0 {
+			return keyDef{}, 0, fmt.Errorf("duplicate modifier %q", p)
+		}
+		mod |= bit
+	}
+
+	keyPart := parts[len(parts)-1]
+	if keyPart == "" {
+		return keyDef{}, 0, fmt.Errorf("missing key name after modifier(s)")
+	}
+
+	k, err := parseKey(keyPart)
+	if err != nil {
+		return keyDef{}, 0, err
+	}
+	if k.keyType == keyTypeConsumer {
+		return keyDef{}, 0, fmt.Errorf("modifiers cannot be used with consumer keys; use a keyboard key instead")
+	}
+
+	return k, mod, nil
+}
+
+func keyComboName(kt uint8, code uint16, mod uint8) string {
+	name := keyName(kt, code)
+	if mod == 0 {
+		return name
+	}
+	var parts []string
+	for i, n := range modifierBitNames {
+		if mod&(1<<i) != 0 {
+			parts = append(parts, n)
+		}
+	}
+	parts = append(parts, name)
+	return strings.Join(parts, "+")
 }
 
 // Open the device and return an hid.Device to the caller.
@@ -290,40 +359,31 @@ func openDevice() (*hid.Device, error) {
 	return dev, nil
 }
 
-// This is the configuration structure stored in the device flash.
 type config struct {
 	typeCW  uint8
 	typeCCW uint8
 	keyCW   uint16
 	keyCCW  uint16
 	divider uint16
+	modCW   uint8
+	modCCW  uint8
 }
 
-func newConfig(typeCW, typeCCW uint8, keyCW, keyCCW, divider uint16) config {
-	return config{
-		typeCW:  typeCW,
-		typeCCW: typeCCW,
-		keyCW:   keyCW,
-		keyCCW:  keyCCW,
-		divider: divider,
-	}
-}
-
-// Convert device representation of config into struct.
 func configFromBuf(buf []byte) config {
 	if len(buf) != configReportSize+1 {
 		log.Fatalf("device configuration is invalid")
 	}
-	return newConfig(
-		buf[1],
-		buf[2],
-		binary.LittleEndian.Uint16(buf[3:5]),
-		binary.LittleEndian.Uint16(buf[5:7]),
-		binary.LittleEndian.Uint16(buf[7:9]),
-	)
+	return config{
+		typeCW:  buf[1],
+		typeCCW: buf[2],
+		keyCW:   binary.LittleEndian.Uint16(buf[3:5]),
+		keyCCW:  binary.LittleEndian.Uint16(buf[5:7]),
+		divider: binary.LittleEndian.Uint16(buf[7:9]),
+		modCW:   buf[9],
+		modCCW:  buf[10],
+	}
 }
 
-// Convert config struct into binary representation for device.
 func configToBuf(reportId uint8, cfg config) []byte {
 	buf := make([]byte, configReportSize+1)
 	buf[0] = reportIDConfig
@@ -332,7 +392,8 @@ func configToBuf(reportId uint8, cfg config) []byte {
 	binary.LittleEndian.PutUint16(buf[3:5], cfg.keyCW)
 	binary.LittleEndian.PutUint16(buf[5:7], cfg.keyCCW)
 	binary.LittleEndian.PutUint16(buf[7:9], cfg.divider)
-
+	buf[9] = cfg.modCW
+	buf[10] = cfg.modCCW
 	return buf
 }
 
@@ -381,8 +442,8 @@ func cmdGet(dev *hid.Device) {
 	if err != nil {
 		log.Fatalf("ERROR: %v", err)
 	}
-	fmt.Printf("key_cw   = %s\n", keyName(cfg.typeCW, cfg.keyCW))
-	fmt.Printf("key_ccw  = %s\n", keyName(cfg.typeCCW, cfg.keyCCW))
+	fmt.Printf("key_cw   = %s\n", keyComboName(cfg.typeCW, cfg.keyCW, cfg.modCW))
+	fmt.Printf("key_ccw  = %s\n", keyComboName(cfg.typeCCW, cfg.keyCCW, cfg.modCCW))
 	fmt.Printf("divider  = %d\n", cfg.divider)
 }
 
@@ -390,8 +451,8 @@ func cmdGet(dev *hid.Device) {
 // update it with any new values before sending it back to the device.
 func cmdSet(dev *hid.Device, args []string) {
 	fs := flag.NewFlagSet("set", flag.ExitOnError)
-	cwStr := fs.String("cw", "", "clockwise key (e.g. volume_increment, a, f1, 0xE9)")
-	ccwStr := fs.String("ccw", "", "counter-clockwise key (e.g. volume_decrement, b, f2, 0xEA)")
+	cwStr := fs.String("cw", "", "clockwise key (e.g. volume_increment, shift+page_up, ctrl+alt+a)")
+	ccwStr := fs.String("ccw", "", "counter-clockwise key (e.g. volume_decrement, shift+page_down)")
 	dividerStr := fs.String("divider", "", "encoder divider")
 	if err := fs.Parse(args); err != nil {
 		log.Fatalf("ERROR: failed to parse arguments")
@@ -403,20 +464,22 @@ func cmdSet(dev *hid.Device, args []string) {
 	}
 
 	if *cwStr != "" {
-		k, err := parseKey(*cwStr)
+		k, mod, err := parseKeyCombo(*cwStr)
 		if err != nil {
 			log.Fatalf("ERROR: %v", err)
 		}
 		cfg.typeCW = k.keyType
 		cfg.keyCW = k.code
+		cfg.modCW = mod
 	}
 	if *ccwStr != "" {
-		k, err := parseKey(*ccwStr)
+		k, mod, err := parseKeyCombo(*ccwStr)
 		if err != nil {
 			log.Fatalf("ERROR: %v", err)
 		}
 		cfg.typeCCW = k.keyType
 		cfg.keyCCW = k.code
+		cfg.modCCW = mod
 	}
 	if *dividerStr != "" {
 		v, err := strconv.ParseUint(*dividerStr, 0, 16)
@@ -454,6 +517,17 @@ func cmdListKeys() {
 			kind = "keyboard"
 		}
 		fmt.Printf("  %-40s %-10s 0x%04X\n", name, kind, def.code)
+	}
+
+	modNames := make([]string, 0, len(modifierNames))
+	for name := range modifierNames {
+		modNames = append(modNames, name)
+	}
+	sort.Strings(modNames)
+	fmt.Println("\nModifiers (keyboard keys only):")
+	fmt.Println("  Use modifier+key syntax, e.g. shift+page_up, ctrl+alt+a")
+	for _, name := range modNames {
+		fmt.Printf("  %s\n", name)
 	}
 }
 

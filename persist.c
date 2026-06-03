@@ -25,13 +25,13 @@ static uint32_t crc32(const void *data, size_t len) {
 }
 
 void config_set_defaults(config_t *cfg) {
+  memset(cfg, 0, sizeof(*cfg));
   cfg->magic = CONFIG_MAGIC;
   cfg->type_cw = KEY_TYPE_CONSUMER;
   cfg->type_ccw = KEY_TYPE_CONSUMER;
   cfg->key_cw = DEFAULT_KEY_CW;
   cfg->key_ccw = DEFAULT_KEY_CCW;
   cfg->divider = DEFAULT_ENCODER_DIVIDER;
-  cfg->crc32 = 0;
 }
 
 // Load runtime configuration from flash.

@@ -47,12 +47,13 @@ static void encoder_init(void) {
   key_is_pressed = false;
 }
 
-static bool send_key(uint8_t type, uint16_t code) {
+static bool send_key(uint8_t type, uint16_t code, uint8_t modifier) {
   if (!tud_hid_ready())
     return false;
 
   if (type == KEY_TYPE_KEYBOARD) {
     uint8_t report[8] = {0};
+    report[0] = modifier;
     report[2] = (uint8_t)code;
     tud_hid_report(REPORT_ID_KEYBOARD, report, sizeof(report));
   } else {
@@ -96,10 +97,10 @@ static void encoder_task(void) {
   encoder_accum += delta;
 
   if (encoder_accum >= config.divider) {
-    if (send_key(config.type_cw, config.key_cw))
+    if (send_key(config.type_cw, config.key_cw, config.mod_cw))
       encoder_accum = 0;
   } else if (encoder_accum <= -config.divider) {
-    if (send_key(config.type_ccw, config.key_ccw))
+    if (send_key(config.type_ccw, config.key_ccw, config.mod_ccw))
       encoder_accum = 0;
   }
 }

@@ -6,7 +6,7 @@
 // This is used to detect whether or not flash holds
 // a valid configuration. It should be udpated whenever
 // the config_t struct changes.
-#define CONFIG_MAGIC 0x564B4332 // "VKC2"
+#define CONFIG_MAGIC 0x564B4333 // "VKC3"
 
 typedef struct {
   uint32_t magic;
@@ -15,6 +15,8 @@ typedef struct {
   uint16_t key_cw;
   uint16_t key_ccw;
   uint16_t divider;
+  uint8_t mod_cw;
+  uint8_t mod_ccw;
   uint32_t crc32;
 } config_t;
 
