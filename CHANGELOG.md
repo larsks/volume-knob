@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.0 (2026-06-02)
+
+### Feat
+
+- Support modifier keys when generating keyboard events
+- Add "bootsel" subcommand to vkcfg
+
 ## v0.3.0 (2026-06-02)
 
 ### Feat
