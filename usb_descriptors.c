@@ -7,6 +7,7 @@
 #define USB_PID 0x2641 // USB product id (https://pid.codes/1209/2641/)
 #define USB_BCD 0x0200
 
+// Top-level USB device descriptor: IDs, class, and string descriptor indices.
 tusb_desc_device_t const desc_device = {
     .bLength = sizeof(tusb_desc_device_t),
     .bDescriptorType = TUSB_DESC_DEVICE,
@@ -24,15 +25,19 @@ tusb_desc_device_t const desc_device = {
     .bNumConfigurations = 0x01,
 };
 
+// TinyUSB callback: returns the device descriptor.
 uint8_t const *tud_descriptor_device_cb(void) {
   return (uint8_t const *)&desc_device;
 }
 
+// HID report descriptor for interface 0: consumer control + keyboard reports.
 uint8_t const desc_hid_report_consumer[] = {
     TUD_HID_REPORT_DESC_CONSUMER(HID_REPORT_ID(REPORT_ID_CONSUMER_CONTROL)),
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(REPORT_ID_KEYBOARD)),
 };
 
+// HID report descriptor for interface 1: vendor-defined feature reports
+// for reading/writing config and sending commands.
 // clang-format off
 uint8_t const desc_hid_report_config[] = {
     0x06, 0x00, 0xFF,              // Usage Page (Vendor Defined 0xFF00)
@@ -61,12 +66,14 @@ uint8_t const desc_hid_report_config[] = {
 };
 // clang-format on
 
+// TinyUSB callback: returns the HID report descriptor for the given interface.
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
   if (instance == HID_INSTANCE_CONFIG)
     return desc_hid_report_config;
   return desc_hid_report_consumer;
 }
 
+// Interface numbering for the configuration descriptor.
 enum {
   ITF_NUM_HID,
   ITF_NUM_HID_CONFIG,
@@ -78,6 +85,8 @@ enum {
 #define EPNUM_HID 0x81
 #define EPNUM_HID_CONFIG 0x82
 
+// USB configuration descriptor: declares both HID interfaces and their
+// endpoints.
 uint8_t const desc_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN,
                           TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
@@ -91,13 +100,18 @@ uint8_t const desc_configuration[] = {
                        CFG_TUD_HID_EP_BUFSIZE, 5),
 };
 
+// TinyUSB callback: returns the configuration descriptor.
 uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
   (void)index;
   return desc_configuration;
 }
 
+// Serial number string, populated lazily (in tud_descriptor_string_cb) from the
+// board's unique ID.
 static char serial_str[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1];
 
+// USB string descriptors: language, manufacturer, product, serial, config
+// interface.
 char const *string_desc_arr[] = {
     [0] = (const char[]){0x09, 0x04},
     [1] = "The Odd Bit",
@@ -106,8 +120,10 @@ char const *string_desc_arr[] = {
     [4] = "Config",
 };
 
+// Scratch buffer for encoding string descriptors as UTF-16.
 static uint16_t _desc_str[32 + 1];
 
+// TinyUSB callback: converts ASCII string descriptors to USB UTF-16 format.
 uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
   (void)langid;
   size_t chr_count;
