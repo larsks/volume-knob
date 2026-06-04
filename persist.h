@@ -3,10 +3,15 @@
 
 #include <stdint.h>
 
+// Convert a four character sequence into a 4-byte integer constant.
+#define FOURCC(a, b, c, d)                                                     \
+  ((uint32_t)(a) << 24 | (uint32_t)(b) << 16 | (uint32_t)(c) << 8 |            \
+   (uint32_t)(d))
+
 // This is used to detect whether or not flash holds
 // a valid configuration. It should be updated whenever
 // the config_t struct changes.
-#define CONFIG_MAGIC 0x564B4333 // "VKC3"
+#define CONFIG_MAGIC FOURCC('V', 'K', 'C', '3')
 
 typedef struct __attribute__((packed)) {
   uint32_t magic;
