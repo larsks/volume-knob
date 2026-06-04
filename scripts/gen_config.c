@@ -1,12 +1,18 @@
+// Output information about data structure field sizes and constant values.
+// This is used when generating the host-side "vkcfg" tool to ensure
+// compatibility.
 #include <stddef.h>
 #include <stdio.h>
 
 #include "persist.h"
 #include "usb_hid.h"
 
-#define FIELD(name) \
-  printf("field %s %zu %zu\n", #name, offsetof(config_t, name), sizeof(((config_t *)0)->name))
+// Output the size and offset of a configuration field.
+#define FIELD(name)                                                            \
+  printf("field %s %zu %zu\n", #name, offsetof(config_t, name),                \
+         sizeof(((config_t *)0)->name))
 
+// Output the value of a symbol.
 #define CONST_HEX(name) printf("const %s 0x%X\n", #name, name)
 #define CONST_DEC(name) printf("const %s %d\n", #name, name)
 
