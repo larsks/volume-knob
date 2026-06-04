@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.2.0 (2026-06-03)
+
+### Feat
+
+- Keep Go tool automatically in sync with firmware
+
+### Fix
+
+- Replace fmt.Fprintf with a template
+- Calculate CONFIG_REPORT_SIZE in firmware
+- Correct typo in persist.h
+- Remove unused functions from main.c
+- Simplify key release handling
+
 ## v1.1.0 (2026-06-02)
 
 ### Feat
