@@ -3,9 +3,9 @@ package main
 import "fmt"
 
 const (
-	version string = "1.2.0"
-	vcs_ref string = "c1a7b639e7"
-	vcs_date string = "2026-06-03 22:59:03 -0400"
+	version string = "1.2.1"
+	vcs_ref string = "93ed8fea8c"
+	vcs_date string = "2026-06-04 08:41:55 -0400"
 )
 
 func cmdVersion() {

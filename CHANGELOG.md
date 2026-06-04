@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.2.1 (2026-06-04)
+
+### Fix
+
+- Update path to vkcfg version.go in update-release-info script
+- One less hardcoded number
+
 ## v1.2.0 (2026-06-03)
 
 ### Feat
