@@ -33,3 +33,12 @@ target_link_libraries(volume_knob
 target_link_options(volume_knob PRIVATE "LINKER:--undefined=version_info")
 
 pico_add_extra_outputs(volume_knob)
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/gen_config
+    COMMAND cc -I${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/scripts/gen_config.c -o ${CMAKE_BINARY_DIR}/gen_config
+    DEPENDS ${CMAKE_SOURCE_DIR}/scripts/gen_config.c
+            ${CMAKE_SOURCE_DIR}/persist.h
+            ${CMAKE_SOURCE_DIR}/usb_hid.h
+)
+add_custom_target(gen_config_target ALL DEPENDS ${CMAKE_BINARY_DIR}/gen_config)

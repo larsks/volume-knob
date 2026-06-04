@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"log"
@@ -21,20 +20,6 @@ const (
 	pid               = 0x2641
 	vendorUsagePage   = 0xFF00
 	configIfaceNumber = 1
-
-	reportIDConfig  = 1
-	reportIDCommand = 2
-
-	configReportSize = 14
-	configMagic      = 0x564B4333
-
-	cmdSave     = 1
-	cmdLoad     = 2
-	cmdDefaults = 3
-	cmdBootsel  = 4
-
-	keyTypeConsumer = 0
-	keyTypeKeyboard = 1
 )
 
 type keyDef struct {
@@ -358,49 +343,6 @@ func openDevice() (*hid.Device, error) {
 		return nil, err
 	}
 	return dev, nil
-}
-
-type config struct {
-	typeCW  uint8
-	typeCCW uint8
-	keyCW   uint16
-	keyCCW  uint16
-	divider uint16
-	modCW   uint8
-	modCCW  uint8
-}
-
-func configFromBuf(buf []byte) config {
-	if len(buf) != configReportSize+1 {
-		log.Fatalf("device configuration is invalid")
-	}
-	magic := binary.LittleEndian.Uint32(buf[1:5])
-	if magic != configMagic {
-		log.Fatalf("firmware version mismatch (expected magic 0x%08X, got 0x%08X); please update firmware or vkcfg", configMagic, magic)
-	}
-	return config{
-		typeCW:  buf[5],
-		typeCCW: buf[6],
-		keyCW:   binary.LittleEndian.Uint16(buf[7:9]),
-		keyCCW:  binary.LittleEndian.Uint16(buf[9:11]),
-		divider: binary.LittleEndian.Uint16(buf[11:13]),
-		modCW:   buf[13],
-		modCCW:  buf[14],
-	}
-}
-
-func configToBuf(reportId uint8, cfg config) []byte {
-	buf := make([]byte, configReportSize+1)
-	buf[0] = reportIDConfig
-	binary.LittleEndian.PutUint32(buf[1:5], configMagic)
-	buf[5] = cfg.typeCW
-	buf[6] = cfg.typeCCW
-	binary.LittleEndian.PutUint16(buf[7:9], cfg.keyCW)
-	binary.LittleEndian.PutUint16(buf[9:11], cfg.keyCCW)
-	binary.LittleEndian.PutUint16(buf[11:13], cfg.divider)
-	buf[13] = cfg.modCW
-	buf[14] = cfg.modCCW
-	return buf
 }
 
 // Read configuration from the device.

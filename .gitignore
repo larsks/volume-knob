@@ -1,2 +1,3 @@
 /build/
 /tools/vkcfg
+tools/config_generated.go
