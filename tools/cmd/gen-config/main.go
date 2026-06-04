@@ -15,6 +15,7 @@ import (
 	"text/template"
 )
 
+// Map the C symbol name to the Go symbol name.
 var constNameMap = map[string]string{
 	"CONFIG_MAGIC":        "configMagic",
 	"REPORT_ID_CONFIG":    "reportIDConfig",
@@ -28,17 +29,21 @@ var constNameMap = map[string]string{
 	"COMMAND_REPORT_SIZE": "commandReportSize",
 }
 
+// These identifies components of names that should be rendered in all caps.
+// Without this we would get typeCw instead of typeCW.
 var abbreviations = map[string]bool{
 	"cw":  true,
 	"ccw": true,
 	"id":  true,
 }
 
+// Represents a single const value.
 type constEntry struct {
 	GoName string
 	Value  string
 }
 
+// Maps fields in the C config_t struct to their Go equivalents.
 type field struct {
 	cName  string
 	goName string
@@ -50,6 +55,7 @@ type field struct {
 func (f field) GoName() string { return f.goName }
 func (f field) GoType() string { return f.goType }
 
+// Convert a C name (type_cw) to a Go name (typeCW).
 func cNameToGo(name string) string {
 	parts := strings.Split(name, "_")
 	result := parts[0]
@@ -63,6 +69,7 @@ func cNameToGo(name string) string {
 	return result
 }
 
+// Select the appropriate data type for a field based on its size.
 func sizeToGoType(size int) string {
 	switch size {
 	case 1:
@@ -77,14 +84,17 @@ func sizeToGoType(size int) string {
 	}
 }
 
+// Return the start of a field in the config struct.
 func (f field) BufOffset() int {
 	return f.offset + 1
 }
 
+// Return the end of a field in the config struct.
 func (f field) BufEnd() int {
 	return f.BufOffset() + f.size
 }
 
+// Generate code to read a field value from the buffer.
 func (f field) ReadExpr() string {
 	off := f.BufOffset()
 	switch f.goType {
@@ -98,6 +108,7 @@ func (f field) ReadExpr() string {
 	panic("unreachable")
 }
 
+// Generate code to write a field value to the buffer.
 func (f field) WriteStmt() string {
 	off := f.BufOffset()
 	expr := "cfg." + f.goName
