@@ -69,6 +69,24 @@ To save the configuration to flash so that it will persist after a device reboot
 $ vkcfg save
 ```
 
+To reload the configuration from flash:
+
+```sh
+$ vkcfg load
+```
+
+To reset to the compiled-in defaults:
+
+```sh
+$ vkcfg defaults
+```
+
+To list all known key names:
+
+```sh
+$ vkcfg list-keys
+```
+
 ## Building
 
 This is a [pico-sdk]-based project. You will need a copy of the [pico-sdk], and you will need to set the `PICO_SDK_PATH` environment variable to point to the location of the sdk directory.
