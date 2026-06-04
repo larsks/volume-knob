@@ -15,6 +15,6 @@ sed -i \
   -e "s/version *string =.*/version string = \"${version}\"/" \
   -e "s/vcs_ref *string =.*/vcs_ref string = \"${vcs_ref}\"/" \
   -e "s/vcs_date *string =.*/vcs_date string = \"${vcs_date}\"/" \
-  tools/version.go
+  tools/cmd/vkcfg/version.go
 
-git add version.c tools/version.go
+git add version.c tools/cmd/vkcfg/version.go
