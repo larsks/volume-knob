@@ -13,7 +13,9 @@
 #define REPORT_ID_CONFIG 1
 #define REPORT_ID_COMMAND 2
 
-#define CONFIG_REPORT_SIZE 14
+#include "persist.h"
+#include <stddef.h>
+#define CONFIG_REPORT_SIZE offsetof(config_t, crc32)
 #define COMMAND_REPORT_SIZE 1
 
 #define CONFIG_CMD_SAVE 1
