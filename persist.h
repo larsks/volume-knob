@@ -4,11 +4,11 @@
 #include <stdint.h>
 
 // This is used to detect whether or not flash holds
-// a valid configuration. It should be udpated whenever
+// a valid configuration. It should be updated whenever
 // the config_t struct changes.
 #define CONFIG_MAGIC 0x564B4333 // "VKC3"
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint32_t magic;
   uint8_t type_cw;
   uint8_t type_ccw;
